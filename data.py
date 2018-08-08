@@ -49,12 +49,13 @@ def partition(x, y, pp):
     """
     sum_pp = sum(pp)
     pp = [p / sum_pp for p in pp]
-    maskk = [(y == i) for i in th.unique(y)]
-    xx = list(map(x.__getitem__, maskk))
-    yy = list(map(y.__getitem__, maskk))
-    nnn = [[int(p * len(x)) for x in xx] for p in pp]
-    xxx = [[x[:n] for x, n in zip(xx, nn)] for nn in nnn]
-    yyy = [[y[:n] for y, n in zip(yy, nn)] for nn in nnn]
+    idxx = [(y == i) for i in th.unique(y)]
+    xx = list(map(x.__getitem__, idxx))
+    yy = list(map(y.__getitem__, idxx))
+    nnn = [[int(p * len(x)) for p in pp[:-1]] for x in xx]
+    nnn = [nn + [len(x) - sum(nn)] for nn, x in zip(nnn, xx)]
+    xxx = zip(*[th.split(x, nn) for x, nn in zip(xx, nnn)])
+    yyy = zip(*[th.split(y, nn) for y, nn in zip(yy, nnn)])
     return zip(xxx, yyy)
 
 
