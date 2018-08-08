@@ -17,7 +17,7 @@ def load_cifar10():
     return x, y
     
 
-def load_covertype():
+def load_covtype():
     x, y = np.load('covtype/x.npy'), np.load('covtype/y.npy')
     p = npr.permutation(len(y))
     x, y = x[p], y[p]

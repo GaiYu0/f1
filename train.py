@@ -26,7 +26,7 @@ parser.add_argument('--w-neg', type=str, help='Weight for NEGative class')
 args = parser.parse_args()
 
 x, y = {'cifar10'   : data.load_cifar10,
-        'covertype' : data.load_covertype}[args.ds]()
+        'covtype' : data.load_covtype}[args.ds]()
 # x, y = data.shuffle(x, y)
 [[[ax_pos, ax_neg], [ay_pos, ay_neg]],
  [[bx_pos, bx_neg], [by_pos, by_neg]],
