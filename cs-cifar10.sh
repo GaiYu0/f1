@@ -1,7 +1,7 @@
 gpu=0
 n=20
-for bs in 64 128 256 512; do
-    for lr in 0.1 0.01 0.001 0.0001; do
+for bs in 32 64; do
+    for lr in 0.001 0.0001; do
         for srgt in max exp; do
             for t in $(seq 1 $((n - 1))); do
                 w_pos=$(python3 -c "print(round(2 - 2 * $t / $n, 1))")

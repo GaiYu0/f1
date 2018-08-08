@@ -54,9 +54,9 @@ def partition(x, y, pp):
     yy = list(map(y.__getitem__, idxx))
     nnn = [[int(p * len(x)) for p in pp[:-1]] for x in xx]
     nnn = [nn + [len(x) - sum(nn)] for nn, x in zip(nnn, xx)]
-    xxx = zip(*[th.split(x, nn) for x, nn in zip(xx, nnn)])
-    yyy = zip(*[th.split(y, nn) for y, nn in zip(yy, nnn)])
-    return zip(xxx, yyy)
+    xxx = [th.split(x, nn) for x, nn in zip(xx, nnn)]
+    yyy = [th.split(y, nn) for y, nn in zip(yy, nnn)]
+    return zip(zip(*xxx), zip(*yyy))
 
 
 def shuffle(x, y):
