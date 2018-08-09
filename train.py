@@ -128,7 +128,7 @@ for i in range(args.ni):
 
         '''
         w_pos, w_neg = fn, fp
-        w_pos, w_neg = 1, (p1 - fn) / (p1 + fp)
+        w_pos, w_neg = p1 - fn, p1 + fp
         '''
 
         w_pos, w_neg = eval(args.w_pos), eval(args.w_neg)
