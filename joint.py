@@ -18,11 +18,10 @@ parser.add_argument('--lr', type=float, help='Learning Rate')
 parser.add_argument('--model', type=str, help='MODEL')
 parser.add_argument('--ni', type=int, help='Number of Iterations')
 parser.add_argument('--ptt', nargs='+', type=int, help='ParTiTion')
-parser.add_argument('--srgt', type=str, help='SurRoGaTe')
 parser.add_argument('--tb', action='store_true', help='TensorBoard')
-parser.add_argument('--update-every', type=int, help='UPDATE weight EVERY _ iterations')
 parser.add_argument('--w-pos', type=str, help='Weight for POSitive class')
 parser.add_argument('--w-neg', type=str, help='Weight for NEGative class')
+
 args = parser.parse_args()
 
 x, y = {'cifar10'   : data.load_cifar10,
@@ -33,18 +32,16 @@ x, y = {'cifar10'   : data.load_cifar10,
  [[cx_pos, cx_neg], [cy_pos, cy_neg]]] = data.partition(x, y, args.ptt)
 ax, bx, cx = th.cat([ax_pos, ax_neg]), th.cat([bx_pos, bx_neg]), th.cat([cx_pos, cx_neg])
 ax, bx, cx = data.normalize([ax, bx, cx])
+ay, by, cy = th.cat([ay_pos, ay_neg]), th.cat([by_pos, by_neg]), th.cat([cy_pos, cy_neg])
 
-ax_pos, ax_neg = ax[:len(ax_pos)], ax[len(ax_pos):]
-pos, neg = thdata.TensorDataset(ax_pos), thdata.TensorDataset(ax_neg)
-pos_loader = it.cycle(thdata.DataLoader(pos, args.bs, shuffle=True, drop_last=True))
-neg_loader = it.cycle(thdata.DataLoader(neg, args.bs, shuffle=True, drop_last=True))
+loader = it.cycle(thdata.DataLoader(thdata.TensorDataset(ax, ay),
+                                    args.bs, shuffle=True, drop_last=True))
+a_loader = thdata.DataLoader(thdata.TensorDataset(ax, ay), args.bsi)
+b_loader = thdata.DataLoader(thdata.TensorDataset(bx, by), args.bsi)
+c_loader = thdata.DataLoader(thdata.TensorDataset(cx, cy), args.bsi)
 
-a_loader = thdata.DataLoader(thdata.TensorDataset(ax, th.cat([ay_pos, ay_neg])), args.bsi)
-b_loader = thdata.DataLoader(thdata.TensorDataset(bx, th.cat([by_pos, by_neg])), args.bsi)
-c_loader = thdata.DataLoader(thdata.TensorDataset(cx, th.cat([cy_pos, cy_neg])), args.bsi)
-
-model = {'linear' : th.nn.Linear(ax_pos.size(1), 1),
-         'mlp'    : mlp.MLP([ax_pos.size(1), 64, 64, 64, 1], th.tanh),
+model = {'linear' : th.nn.Linear(ax_pos.size(1), 2),
+         'mlp'    : mlp.MLP([ax_pos.size(1), 64, 64, 64, 2], th.tanh),
          'resnet' : resnet.ResNet(18, 1)}[args.model]
 model.apply(utils.init)
 opt = th.optim.Adam(model.parameters(), args.lr, amsgrad=True)
@@ -113,48 +110,15 @@ def log(model, i):
 
 log(model, 0)
 
-if not args.update_every:
-#   w_pos, w_neg = len(ax_pos) / len(ax_neg), 1
-    w_pos, w_neg = eval(args.w_pos), eval(args.w_neg)
-
 for i in range(args.ni):
-    if args.update_every > 0 and i % args.update_every == 0:
-        for p in model.parameters():
-            p.requires_grad = False
-        y, y_bar = infer(b_loader, model)
-        p1 = th.sum(y > 0).float()
-        fn = utils.fn(y, y_bar)
-        fp = utils.fp(y, y_bar)
-
-        '''
-        w_pos, w_neg = fn, fp
-        w_pos, w_neg = p1 - fn, p1 + fp
-        '''
-
-        w_pos, w_neg = eval(args.w_pos), eval(args.w_neg)
-
-    [x_pos], [x_neg] = next(pos_loader), next(neg_loader)
-
+    x, y = next(loader)
     if cuda:
-        x_pos, x_neg = x_pos.cuda(), x_neg.cuda()
+        x, y = x.cuda(), y.cuda()
 
     for p in model.parameters():
         p.requires_grad = True
 
-    if args.srgt == 'max':
-        zeros = th.zeros(args.bs, 1)
-        if cuda:
-            zeros = zeros.cuda()
-        z_pos = th.mean(th.max(zeros, 1 - model(x_pos)))
-        z_neg = th.mean(th.max(zeros, 1 + model(x_neg)))
-    elif args.srgt == 'exp':
-        z_pos = th.mean(th.exp(-model(x_pos)))
-        z_neg = th.mean(th.exp(model(x_neg)))
-    else:
-        raise RuntimeError()
-
-    z = w_pos * z_pos + w_neg * z_neg
-
+    z = th.log(F.softmax(model(x), 1))
     opt.zero_grad()
     z.backward()
     opt.step()
