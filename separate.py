@@ -25,8 +25,11 @@ parser.add_argument('--w-pos', type=str, help='Weight for POSitive class')
 parser.add_argument('--w-neg', type=str, help='Weight for NEGative class')
 args = parser.parse_args()
 
-x, y = {'cifar10'   : data.load_cifar10,
-        'covtype' : data.load_covtype}[args.ds]()
+x, y = {'adult'    : data.load_adult,
+        'cifar10'  : data.load_cifar10,
+        'covtype'  : data.load_covtype,
+        'kddcup08' : data.load_kddcup08,
+        'letter'   : data.load_letter}[args.ds]()
 # x, y = data.shuffle(x, y)
 [[[ax_pos, ax_neg], [ay_pos, ay_neg]],
  [[bx_pos, bx_neg], [by_pos, by_neg]],
