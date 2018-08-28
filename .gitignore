@@ -1,7 +1,7 @@
 __pycache__/
 .ipynb_checkpoints/
 
-runs/
+log/
 
 adult/
 covtype/

@@ -9,10 +9,12 @@ import resnet
 import utils
 
 parser = ap.ArgumentParser()
+parser.add_argument('--ab', type=str, help='AB')
 parser.add_argument('--bs', type=int, help='Batch Size')
 parser.add_argument('--bsi', type=int, help='Batch Size for Inference')
 parser.add_argument('--ds', type=str, help='DataSet')
 parser.add_argument('--gpu', type=int, help='GPU')
+parser.add_argument('--id', type=str, help='IDentifier')
 parser.add_argument('--log-every', type=int, help='LOG statistics EVERY _ iterations')
 parser.add_argument('--lr', type=float, help='Learning Rate')
 parser.add_argument('--model', type=str, help='MODEL')
@@ -30,7 +32,7 @@ x, y = {'adult'    : data.load_adult,
         'covtype'  : data.load_covtype,
         'kddcup08' : data.load_kddcup08,
         'letter'   : data.load_letter}[args.ds]()
-# x, y = data.shuffle(x, y)
+x, y = data.shuffle(x, y)
 [[[ax_pos, ax_neg], [ay_pos, ay_neg]],
  [[bx_pos, bx_neg], [by_pos, by_neg]],
  [[cx_pos, cx_neg], [cy_pos, cy_neg]]] = data.partition(x, y, args.ptt)
@@ -78,9 +80,7 @@ tagg = ['tp', 'fp', 'fn', 'tn', 'a', 'p', 'r', 'f1']
 
 if args.tb:
     keys = sorted(vars(args).keys())
-    excluded = ['bsi', 'gpu', 'log_every', 'ni', 'tb', 'update_every']
-    path = 'runs/' + '#'.join('%s:%s' % (k, str(getattr(args, k))) \
-                              for k in keys if k not in excluded)
+#   path = '/%s' % args.id
     writer = tb.SummaryWriter(path)
     a_writer = tb.SummaryWriter(path + '/a')
     b_writer = tb.SummaryWriter(path + '/b')
@@ -125,17 +125,19 @@ for i in range(args.ni):
     if args.update_every > 0 and i % args.update_every == 0:
         for p in model.parameters():
             p.requires_grad = False
-        y, y_bar = infer(b_loader, model)
-        p1 = th.sum(y > 0).float()
+        y, y_bar = infer({'a' : a_loader, 'b' : b_loader}[args.ab], model)
+        p1 = th.sum(y > 0).item()
         fn = utils.fn(y, y_bar)
         fp = utils.fp(y, y_bar)
 
         '''
         w_pos, w_neg = fn, fp
-        w_pos, w_neg = p1 - fn, p1 + fp
+        w_pos, w_neg = p1 + fp, p1 - fn
         '''
 
         w_pos, w_neg = eval(args.w_pos), eval(args.w_neg)
+        w = w_pos + w_neg
+        w_pos, w_neg = w_pos / w, w_neg / w
 
     [x_pos], [x_neg] = next(pos_loader), next(neg_loader)
 

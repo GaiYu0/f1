@@ -21,7 +21,7 @@ def tp(y, y_bar):
     y : (N,)
     y_bar : (N,)
     """
-    return th.sum((y > 0) * (y_bar > 0)).item()
+    return th.sum((y > 0) * (y_bar >= 0)).item()
 
 
 def fp(y, y_bar):
@@ -31,7 +31,7 @@ def fp(y, y_bar):
     y : (N,)
     y_bar : (N,)
     """
-    return th.sum((y < 0) * (y_bar > 0)).item()
+    return th.sum((y < 0) * (y_bar >= 0)).item()
 
 
 def fn(y, y_bar):

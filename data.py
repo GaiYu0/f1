@@ -52,11 +52,12 @@ def normalize(xx, eps=1e-5):
     ----------
     xx : list of th.Tensor
     """
-    mean = th.mean(xx[0], 0, keepdim=True)
-    xx[0] = xx[0] - mean
-    std = th.sqrt(th.mean(xx[0] * xx[0], 0, keepdim=True)) + eps
-    xx[0] = xx[0] / std
-    xx = [xx[0]] + [(x - mean) / std for x in xx[1:]]
+    x = xx[0]
+    mean = th.mean(x, 0, keepdim=True)
+    x = x - mean
+    std = th.sqrt(th.mean(x * x, 0, keepdim=True))
+    x = x / (std + eps)
+    xx = [x] + [(x - mean) / std for x in xx[1:]]
     return xx
 
 
