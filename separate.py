@@ -2,6 +2,7 @@ import argparse as ap
 import itertools as it
 import tensorboardX as tb
 import torch as th
+import torch.nn.functional as F
 import torch.utils.data as thdata
 import data
 import mlp
@@ -19,6 +20,7 @@ parser.add_argument('--log-every', type=int, help='LOG statistics EVERY _ iterat
 parser.add_argument('--lr', type=float, help='Learning Rate')
 parser.add_argument('--model', type=str, help='MODEL')
 parser.add_argument('--ni', type=int, help='Number of Iterations')
+parser.add_argument('--opt', type=str, help='OPTimizer')
 parser.add_argument('--ptt', nargs='+', type=int, help='ParTiTion')
 parser.add_argument('--srgt', type=str, help='SurRoGaTe')
 parser.add_argument('--tb', action='store_true', help='TensorBoard')
@@ -42,8 +44,8 @@ ay, by, cy = th.cat([ay_pos, ay_neg]), th.cat([by_pos, by_neg]), th.cat([cy_pos,
 
 ax_pos, ax_neg = ax[:len(ax_pos)], ax[len(ax_pos):]
 pos, neg = thdata.TensorDataset(ax_pos), thdata.TensorDataset(ax_neg)
-pos_loader = it.cycle(thdata.DataLoader(pos, args.bs, shuffle=True, drop_last=True))
-neg_loader = it.cycle(thdata.DataLoader(neg, args.bs, shuffle=True, drop_last=True))
+pos_loader = it.cycle(thdata.DataLoader(pos, args.bs, shuffle=True))
+neg_loader = it.cycle(thdata.DataLoader(neg, args.bs, shuffle=True))
 
 a_loader = thdata.DataLoader(thdata.TensorDataset(ax, ay), args.bsi)
 b_loader = thdata.DataLoader(thdata.TensorDataset(bx, by), args.bsi)
@@ -53,7 +55,11 @@ model = {'linear' : th.nn.Linear(ax_pos.size(1), 1),
          'mlp'    : mlp.MLP([ax_pos.size(1), 64, 64, 64, 1], th.tanh),
          'resnet' : resnet.ResNet(18, 1)}[args.model]
 model.apply(utils.init)
-opt = th.optim.Adam(model.parameters(), args.lr, amsgrad=True)
+opt = {'sgd' : th.optim.SGD(model.parameters(), args.lr),
+       'adam' : th.optim.Adam(model.parameters(), args.lr, amsgrad=True)}[args.opt]
+model.eval()
+for p in model.parameters():
+    p.requires_grad = False
 
 if args.gpu < 0:
     cuda = False
@@ -80,7 +86,7 @@ tagg = ['tp', 'fp', 'fn', 'tn', 'a', 'p', 'r', 'f1']
 
 if args.tb:
     keys = sorted(vars(args).keys())
-#   path = '/%s' % args.id
+    path = 'tb/%s' % args.id
     writer = tb.SummaryWriter(path)
     a_writer = tb.SummaryWriter(path + '/a')
     b_writer = tb.SummaryWriter(path + '/b')
@@ -123,8 +129,6 @@ if not args.update_every:
 
 for i in range(args.ni):
     if args.update_every > 0 and i % args.update_every == 0:
-        for p in model.parameters():
-            p.requires_grad = False
         y, y_bar = infer({'a' : a_loader, 'b' : b_loader}[args.ab], model)
         p1 = th.sum(y > 0).item()
         fn = utils.fn(y, y_bar)
@@ -144,15 +148,13 @@ for i in range(args.ni):
     if cuda:
         x_pos, x_neg = x_pos.cuda(), x_neg.cuda()
 
+    model.train()
     for p in model.parameters():
         p.requires_grad = True
 
     if args.srgt == 'max':
-        zeros = th.zeros(args.bs, 1)
-        if cuda:
-            zeros = zeros.cuda()
-        z_pos = th.mean(th.max(zeros, 1 - model(x_pos)))
-        z_neg = th.mean(th.max(zeros, 1 + model(x_neg)))
+        z_pos = th.mean(F.relu(1 - model(x_pos)))
+        z_neg = th.mean(F.relu(1 + model(x_neg)))
     elif args.srgt == 'exp':
         z_pos = th.mean(th.exp(-model(x_pos)))
         z_neg = th.mean(th.exp(model(x_neg)))
@@ -165,12 +167,14 @@ for i in range(args.ni):
     z.backward()
     opt.step()
 
+    model.eval()
+    for p in model.parameters():
+        p.requires_grad = False
+
     if args.tb:
         writer.add_scalar('z_pos', z_pos, i + 1)
         writer.add_scalar('z_neg', z_neg, i + 1)
         writer.add_scalar('z', z, i + 1)
 
     if (i + 1) % args.log_every == 0:
-        for p in model.parameters():
-            p.requires_grad = False
         log(model, i + 1)
