@@ -3,6 +3,12 @@ import torch.nn as nn
 import sklearn.metrics as metrics
 
 
+def cycle(loader):
+    while True:
+        for x in loader:
+            yield x
+
+
 def init(x):
     if isinstance(x, (nn.Linear, nn.Conv2d)):
         x.bias.data.fill_(0)

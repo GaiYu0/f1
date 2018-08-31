@@ -1,5 +1,4 @@
 import argparse as ap
-import itertools as it
 import tensorboardX as tb
 import torch as th
 import torch.nn.functional as F
@@ -11,7 +10,8 @@ import utils
 
 parser = ap.ArgumentParser()
 parser.add_argument('--ab', type=str, help='AB')
-parser.add_argument('--bs', type=int, help='Batch Size')
+parser.add_argument('--bs_pos', type=int, help='Batch Size for POSitive class')
+parser.add_argument('--bs_neg', type=int, help='Batch Size for NEGative class')
 parser.add_argument('--bsi', type=int, help='Batch Size for Inference')
 parser.add_argument('--ds', type=str, help='DataSet')
 parser.add_argument('--gpu', type=int, help='GPU')
@@ -44,8 +44,8 @@ ay, by, cy = th.cat([ay_pos, ay_neg]), th.cat([by_pos, by_neg]), th.cat([cy_pos,
 
 ax_pos, ax_neg = ax[:len(ax_pos)], ax[len(ax_pos):]
 pos, neg = thdata.TensorDataset(ax_pos), thdata.TensorDataset(ax_neg)
-pos_loader = it.cycle(thdata.DataLoader(pos, args.bs, shuffle=True))
-neg_loader = it.cycle(thdata.DataLoader(neg, args.bs, shuffle=True))
+pos_loader = utils.cycle(thdata.DataLoader(pos, args.bs_pos, shuffle=True))
+neg_loader = utils.cycle(thdata.DataLoader(neg, args.bs_neg, shuffle=True))
 
 a_loader = thdata.DataLoader(thdata.TensorDataset(ax, ay), args.bsi)
 b_loader = thdata.DataLoader(thdata.TensorDataset(bx, by), args.bsi)
@@ -53,6 +53,7 @@ c_loader = thdata.DataLoader(thdata.TensorDataset(cx, cy), args.bsi)
 
 model = {'linear' : th.nn.Linear(ax_pos.size(1), 1),
          'mlp'    : mlp.MLP([ax_pos.size(1), 64, 64, 64, 1], th.tanh),
+         'mlpx'   : mlp.MLP([ax_pos.size(1), 64, 64, 64, 1], th.tanh, 0.5),
          'resnet' : resnet.ResNet(18, 1)}[args.model]
 model.apply(utils.init)
 opt = {'sgd' : th.optim.SGD(model.parameters(), args.lr),
