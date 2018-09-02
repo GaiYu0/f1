@@ -9,23 +9,23 @@ srgt=$8
 n_proc=$9
 i=0
 
-n=100
+n=10
 for bs in $(echo "$1"); do
     for lr in $(echo "$3"); do
         for t in $(seq 1 $((n - 1))); do
             w_pos=$(python3 -c "print(round(2 - 2 * $t / $n, 1))")
             w_neg=$(python3 -c "print(round(2 * $t / $n, 1))")
 
-            id=cs#bs_pos-$bs\
-                 #bs_neg-$bs\
-                 #ds-$ds\
-                 #lr-$lr\
-                 #model-$model\
-                 #opt-$opt\
-                 #ptt-$ptt\
-                 #srgt-$srgt\
-                 #w_pos-$w_pos\
-                 #w_neg-$w_neg
+            id="cs#bs_pos-$bs"`
+                `"#bs_neg-$bs"`
+                `"#ds-$ds"`
+                `"#lr-$lr"`
+                `"#model-$model"`
+                `"#opt-$opt"`
+                `"#ptt-$ptt"`
+                `"#srgt-$srgt"`
+                `"#w_pos-$w_pos"`
+                `"#w_neg-$w_neg"
 
             python3 separate.py --bsi 262144 \
                                 --bs_pos $bs \
