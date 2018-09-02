@@ -9,9 +9,10 @@ import resnet
 import utils
 
 parser = ap.ArgumentParser()
-parser.add_argument('--ab', type=str, help='AB')
-parser.add_argument('--bsi', type=int, help='Batch Size for Inference')
-parser.add_argument('--bsl', type=int, help='Batch Size for Level estimation')
+parser.add_argument('--ab', type=str, help='AB', default=None)
+parser.add_argument('--bsi', type=int, help='Batch Size for Inference', default=None)
+parser.add_argument('--bsl', type=int,
+                    help='Batch Size for Level estimation', default=None)
 parser.add_argument('--bs_pos', type=int, help='Batch Size for POSitive class')
 parser.add_argument('--bs_neg', type=int, help='Batch Size for NEGative class')
 parser.add_argument('--ds', type=str, help='DataSet')
