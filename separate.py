@@ -10,9 +10,10 @@ import utils
 
 parser = ap.ArgumentParser()
 parser.add_argument('--ab', type=str, help='AB')
+parser.add_argument('--bsi', type=int, help='Batch Size for Inference')
+parser.add_argument('--bsl', type=int, help='Batch Size for Level estimation')
 parser.add_argument('--bs_pos', type=int, help='Batch Size for POSitive class')
 parser.add_argument('--bs_neg', type=int, help='Batch Size for NEGative class')
-parser.add_argument('--bsi', type=int, help='Batch Size for Inference')
 parser.add_argument('--ds', type=str, help='DataSet')
 parser.add_argument('--gpu', type=int, help='GPU')
 parser.add_argument('--id', type=str, help='IDentifier')
@@ -47,9 +48,9 @@ pos, neg = thdata.TensorDataset(ax_pos), thdata.TensorDataset(ax_neg)
 pos_loader = utils.cycle(thdata.DataLoader(pos, args.bs_pos, shuffle=True))
 neg_loader = utils.cycle(thdata.DataLoader(neg, args.bs_neg, shuffle=True))
 
-a_loader = thdata.DataLoader(thdata.TensorDataset(ax, ay), args.bsi)
-b_loader = thdata.DataLoader(thdata.TensorDataset(bx, by), args.bsi)
-c_loader = thdata.DataLoader(thdata.TensorDataset(cx, cy), args.bsi)
+a_loader = thdata.DataLoader(thdata.TensorDataset(ax, ay), args.bsi, shuffle=True)
+b_loader = thdata.DataLoader(thdata.TensorDataset(bx, by), args.bsi, shuffle=True)
+c_loader = thdata.DataLoader(thdata.TensorDataset(cx, cy), args.bsi, shuffle=True)
 
 model = {'linear' : th.nn.Linear(ax_pos.size(1), 1),
          'mlp'    : mlp.MLP([ax_pos.size(1), 64, 64, 64, 1], th.tanh),
@@ -130,7 +131,16 @@ if not args.update_every:
 
 for i in range(args.ni):
     if args.update_every > 0 and i % args.update_every == 0:
-        y, y_bar = infer({'a' : a_loader, 'b' : b_loader}[args.ab], model)
+        loader = {'a' : a_loader, 'b' : b_loader}[args.ab]
+        if args.bsl > 0:
+            assert args.bsl < args.bsi
+            x, y = next(iter(loader))
+            x, y = x[:args.bsl], y[:args.bsl]
+            if cuda:
+                x, y = x.cuda(), y.cuda()
+            y_bar = th.sign(model(x)).squeeze(-1).long()
+        else:
+            y, y_bar = infer(loader, model)
         p1 = th.sum(y > 0).item()
         fn = utils.fn(y, y_bar)
         fp = utils.fp(y, y_bar)
