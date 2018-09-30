@@ -19,16 +19,44 @@ def load_cifar10():
     bx, by = b.test_data, b.test_labels
     x, y = np.concatenate([ax, bx]), np.concatenate([ay, by])
     x = x.transpose([0, 3, 1, 2]).reshape([len(x), -1])
+    x, y = th.from_numpy(x).float(), th.from_numpy(y)
+    return x, y
+    
+
+def load_binary_cifar10():
+    x, y = load_cifar10()
+    y[y != 1] = -1
+    return x, y
+
+
+def load_cifar100():
+    a = datasets.CIFAR100('CIFAR100')
+    ax, ay = a.train_data, a.train_labels
+    b = datasets.CIFAR100('CIFAR100', train=False)
+    bx, by = b.test_data, b.test_labels
+    x, y = np.concatenate([ax, bx]), np.concatenate([ay, by])
+    x = x.transpose([0, 3, 1, 2]).reshape([len(x), -1])
     y[y != 1] = -1
     x, y = th.from_numpy(x).float(), th.from_numpy(y)
     return x, y
     
 
+def load_binary_cifar100():
+    x, y = load_cifar100()
+    y[y != 1] = -1
+    return x, y
+
+
 def load_covtype():
     x, y = np.load('covtype/x.npy'), np.load('covtype/y.npy')
+    x, y = th.from_numpy(x), th.from_numpy(y)
+    return x, y
+
+
+def load_binary_covtype():
+    x, y = load_covtype()
     y[y != 5] = -1
     y[y == 5] = 1
-    x, y = th.from_numpy(x), th.from_numpy(y)
     return x, y
 
 
@@ -40,9 +68,14 @@ def load_kddcup08():
 
 def load_letter():
     x, y = np.load('letter/x.npy'), np.load('letter/y.npy')
+    x, y = th.from_numpy(x), th.from_numpy(y)
+    return x, y
+
+
+def load_binary_letter():
+    x, y = load_letter()
     y[y != 13] = -1
     y[y == 13] = 1
-    x, y = th.from_numpy(x), th.from_numpy(y)
     return x, y
 
 
