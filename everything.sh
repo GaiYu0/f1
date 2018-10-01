@@ -1,6 +1,7 @@
 mkdir result
 for ds in adult cifar10 cifar100 covtype kddcup08; do
     bash old-binary.sh $ds 8
+    mkdir result/$ds
     mkdir result/$ds/old/
     mv tb/* result/$ds/old/
     bash optimal.sh result/$ds/old result/$ds/old-opt
