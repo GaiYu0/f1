@@ -4,11 +4,11 @@ for ds in adult cifar10 cifar100 covtype kddcup08; do
     mkdir result/$ds
     mkdir result/$ds/old/
     mv tb/* result/$ds/old/
-    bash optimal.sh result/$ds/old result/$ds/old-opt
+    bash optimal.sh result/$ds/old result/$ds/old-opt 64
     bash new-binary.sh $ds 8
     mkdir result/$ds/new/
     mv tb/* result/$ds/new/
-    bash optimal.sh result/$ds/new result/$ds/new-opt
+    bash optimal.sh result/$ds/new result/$ds/new-opt 64
 done
 for ds in adult cifar10 cifar100 covtype kddcup08; do
     echo $ds
