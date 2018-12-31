@@ -75,17 +75,16 @@ def fp_mc(y, y_bar, n_classes):
     return [fp_01((y == i), (y_bar == i)) for i in range(n_classes)]
 
 
-def f1_macro(pp, y, y_bar, n_classes):
-    return 2 / n_classes * sum((p - fn) / (2 * p - fn + fp) \
-                               for p, fn, fp in zip(pp, fn_mc(y, y_bar, n_classes),
-                                                        fp_mc(y, y_bar, n_classes)))
+def f1_macro(pp, fnfn, fpfp):
+    return 2 / len(pp) * sum((p - fn) / (2 * p - fn + fp) \
+                             for p, fn, fp in zip(pp, fnfn, fpfp))
 
 
-def f1_micro(pp, y, y_bar, n_classes):
-    sum_pp = sum(pp)
-    sum_fn = sum(fn_mc(y, y_bar, n_classes))
-    sum_fp = sum(fp_mc(y, y_bar, n_classes))
-    return 2 * (sum_pp - sum_fn) / (2 * sum_pp - sum_fn + sum_fp)
+def f1_micro(pp, fnfn, fpfp):
+    sum_p = sum(pp)
+    sum_fn = sum(fnfn)
+    sum_fp = sum(fpfp)
+    return 2 * (sum_p - sum_fn) / (2 * sum_p - sum_fn + sum_fp)
 
 
 def train(model):

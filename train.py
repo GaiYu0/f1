@@ -1,5 +1,7 @@
 import argparse
 import tensorboardX as tb
+import torch as th
+import torch.nn.functional as F
 import torch.optim as optim
 import torch.utils.data as D
 import data
@@ -10,13 +12,18 @@ import utils
 parser = argparse.ArgumentParser()
 parser.add_argument('--bst', nargs='+', type=int, help='Batch Size for Training')
 parser.add_argument('--bsi', type=int, help='Batch Size for Inference')
+parser.add_argument('--ds', type=str, help='DataSet')
 parser.add_argument('--gpu', type=int, help='GPU')
 parser.add_argument('--id', type=str, help='IDentifier')
+parser.add_argument('--log-every', type=int, help='LOG statistics EVERY _ iterations')
+parser.add_argument('--loss', type=str, help='LOSS')
 parser.add_argument('--lr', type=float, help='Learning Rate')
 parser.add_argument('--model', type=str, help='MODEL')
 parser.add_argument('--ni', type=int, help='Number of Iterations')
+parser.add_argument('--opt', type=str, help='OPTimizer')
 parser.add_argument('--ptt', nargs='+', type=int, help='ParTiTion')
 parser.add_argument('--tb', action='store_true', help='TensorBoard')
+parser.add_argument('--w', type=float, help='Weight')
 parser.add_argument('--wd', type=float, help='Weight Decay')
 args = parser.parse_args()
 
@@ -45,13 +52,13 @@ val_loader = D.DataLoader(D.TensorDataset(val_x, val_y), args.bsi)
 test_loader = D.DataLoader(D.TensorDataset(test_x, test_y), args.bsi)
 
 n_classes = len(train_yy)
-pp = [len(y) / len(train_y) for y in train_yy]  # estimate on training set
+pclass_list = [len(y) / len(train_y) for y in train_yy]  # estimate on training set
 
-model = {'linear' : th.nn.Linear(ax_pos.size(1), 2),
-         'mlp'    : mlp.MLP([ax_pos.size(1), 64, 64, 64, 2], th.relu, bn=True),
-         'resnet' : resnet.ResNet(18, 2)}[args.model].to(dev)
+model = {'linear' : th.nn.Linear(train_x.size(1), n_classes),
+         'mlp'    : mlp.MLP([train_x.size(1), 64, 64, 64, n_classes], th.relu, bn=True),
+         'resnet' : resnet.ResNet(18, n_classes)}[args.model].to(dev)
 
-params = model.parameters()
+params = list(model.parameters())
 kwargs = {'params' : params, 'lr' : args.lr, 'weight_decay' : args.wd}
 opt = {'sgd'  : optim.SGD(**kwargs),
        'adam' : optim.Adam(amsgrad=True, **kwargs)}[args.opt]
@@ -94,12 +101,33 @@ def log(model, i):
             for tag, m in zip(tagg, mm):
                 writer.add_scalar(tag, m, i)
 
+'''
 utils.eval(model)
 log(model, 0)
+'''
 
 for i in range(args.ni):
-    xx = [next(loader)[0] for loader in train_loaders]
+    xx = [next(loader)[0].to(dev) for loader in train_loaders]
     x = th.cat(xx)
     z = F.softmax(model(x), 1)
-    zz = th.split(z, [bs for bs in args.bst])
-    for i, z in enumerate(zz):
+    zz = th.split(z, [len(x) for x in xx])
+    pneg_list = [1 - th.mean(z[:, i]) for i, z in enumerate(zz)]
+    fnfn = [p_class * p_neg for p_class, p_neg in zip(pclass_list, pneg_list)]
+    fpfp = [(1 - p_class) * p_neg for p_class, p_neg in zip(pclass_list, pneg_list)]
+
+    if args.w > 0:
+        pass
+    else:
+        loss = -getattr(utils, args.loss)(pclass_list, fnfn, fpfp)
+
+    opt.zero_grad()
+    loss.backward()
+    opt.step()
+
+    print(-loss.item())
+
+    '''
+    utils.eval(model)
+    if (i + 1) % args.log_every == 0:
+        log(model, i + 1)
+    '''
