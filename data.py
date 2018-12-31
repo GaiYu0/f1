@@ -55,8 +55,8 @@ def load_covtype():
 
 def load_binary_covtype():
     x, y = load_covtype()
-    y[y != 5] = -1
-    y[y == 5] = 1
+    y[y != 4] = -1
+    y[y == 4] = 1
     return x, y
 
 
