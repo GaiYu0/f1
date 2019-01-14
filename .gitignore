@@ -2,7 +2,6 @@ __pycache__/
 .ipynb_checkpoints/
 
 tb/
-result/
 
 adult/
 covtype/
@@ -10,6 +9,7 @@ CIFAR10/
 CIFAR100/
 kddcup08/
 letter/
+MNIST/
 
 *.pyc
 .*.swp

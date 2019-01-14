@@ -107,9 +107,6 @@ def log(model, i):
         p = utils.div(tp, tp + fp)
         r = utils.div(tp, p1)
         m = metric(p1, fn, fp)
-        if type(m) is complex:
-            print(p1, tp, fp, fn, tn)
-
         mmm.append([tp, fp, fn, tn, a, p, r, m])
 
     tagg = ['tp', 'fp', 'fn', 'tn', 'a', 'p', 'r', args.metric]

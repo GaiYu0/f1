@@ -3,7 +3,7 @@ ds=$1
 metric=$2
 model=$3
 n_procs=$4
-n_gpus=$(lspci | grep VGA | grep NVIDIA | wc -l)
+n_gpus=$(nvidia-smi | grep On | wc -l)
 i=0
 for bs in 64 128 256 512; do
     for lr in 0.1 0.01 0.001 0.0001; do

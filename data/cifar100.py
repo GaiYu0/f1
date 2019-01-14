@@ -1,3 +1,3 @@
-from torchvision.datasets import CIFAR10
+from torchvision.datasets import CIFAR100
 
-CIFAR10(root='.', download=True)
+CIFAR100(root='CIFAR100', download=True)

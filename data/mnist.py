@@ -1,3 +1,3 @@
 from torchvision.datasets import MNIST
 
-MNIST(root='.', download=True)
+MNIST(root='MNIST', download=True)
