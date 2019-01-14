@@ -39,8 +39,15 @@ def tn(y, y_bar):
     return th.sum((y < 0) * (y_bar < 0)).item()
 
 
-def f1(tp, fp, fn):
-    return 2 * tp / (2 * tp + fn + fp)
+def f1(p1, fn, fp):
+    return 2 * (p1 - fn) / (2 * p1 - fn + fp)
+
+
+def g1(p1, fn, fp):
+    ret = (p1 - fn) / (p1 * (p1 - fn + fp)) ** 0.5
+    if type(ret) is complex:
+        ret = float('Inf')
+    return ret
 
 
 def tp_01(y, y_bar):
@@ -75,16 +82,19 @@ def fp_mc(y, y_bar, n_classes):
     return [fp_01((y == i), (y_bar == i)) for i in range(n_classes)]
 
 
+def precision_macro():
+    pass
+
+
 def f1_macro(pp, fnfn, fpfp):
     return 2 / len(pp) * sum((p - fn) / (2 * p - fn + fp) \
                              for p, fn, fp in zip(pp, fnfn, fpfp))
 
 
 def f1_micro(pp, fnfn, fpfp):
-    sum_p = sum(pp)
     sum_fn = sum(fnfn)
     sum_fp = sum(fpfp)
-    return 2 * (sum_p - sum_fn) / (2 * sum_p - sum_fn + sum_fp)
+    return 2 * (1 - sum_fn) / (2 - sum_fn + sum_fp)
 
 
 def train(model):

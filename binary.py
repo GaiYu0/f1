@@ -17,6 +17,7 @@ parser.add_argument('--gpu', type=int, help='GPU')
 parser.add_argument('--id', type=str, help='IDentifier')
 parser.add_argument('--log-every', type=int, help='LOG statistics EVERY _ iterations')
 parser.add_argument('--lr', type=float, help='Learning Rate')
+parser.add_argument('--metric', type=str, help='METRIC')
 parser.add_argument('--model', type=str, help='MODEL')
 parser.add_argument('--ni', type=int, help='Number of Iterations')
 parser.add_argument('--opt', type=str, help='OPTimizer')
@@ -27,6 +28,7 @@ parser.add_argument('--wd', type=float, help='Weight Decay')
 args = parser.parse_args()
 
 dev = th.device('cpu') if args.gpu < 0 else th.device('cuda:%d' % args.gpu)
+metric = getattr(utils, args.metric)
 
 x, y = {'adult'    : data.load_adult,
         'cifar10'  : data.load_binary_cifar10,
@@ -51,13 +53,26 @@ a_loader = D.DataLoader(D.TensorDataset(ax, ay), args.bsi)
 b_loader = D.DataLoader(D.TensorDataset(bx, by), args.bsi)
 c_loader = D.DataLoader(D.TensorDataset(cx, cy), args.bsi)
 
-model = {'linear' : th.nn.Linear(ax_pos.size(1), 2),
-         'mlp'    : mlp.MLP([ax_pos.size(1), 64, 64, 64, 2], th.relu, bn=True),
-         'resnet' : resnet.ResNet(18, 2)}[args.model].to(dev)
+p0 = len(ax_neg) / len(ax)
+p1 = 1 - p0
+
+if args.model == 'linear':
+    model = th.nn.Linear(ax_pos.size(1), 2)
+elif args.model == 'mlp':
+    model = mlp.MLP([ax_pos.size(1), 64, 64, 64, 2], th.relu, bn=True)
+elif args.model == 'resnet':
+    model = resnet.ResNet(18, 2)
+else:
+    raise RuntimeError()
+model = model.to(dev)
 
 kwargs = {'weight_decay' : args.wd}
-opt = {'sgd'  : th.optim.SGD(model.parameters(), args.lr, **kwargs),
-       'adam' : th.optim.Adam(model.parameters(), args.lr, amsgrad=True, **kwargs)}[args.opt]
+if args.opt == 'sgd':
+    opt = th.optim.SGD(model.parameters(), args.lr, **kwargs)
+elif args.opt == 'adam':
+    opt = th.optim.Adam(model.parameters(), args.lr, amsgrad=True, **kwargs)
+else:
+    raise RuntimeError()
 
 if args.tb:
     path = 'tb/%s' % args.id
@@ -83,20 +98,21 @@ def log(model, i):
     for loader in a_loader, b_loader, c_loader:
         y, y_bar = infer(loader, model)
 
-        tp = utils.tp(y, y_bar)
-        tpr = tp / len(y)
-        fpr = utils.fp(y, y_bar) / len(y)
-        fnr = utils.fn(y, y_bar) / len(y)
-        tnr = utils.tn(y, y_bar) / len(y)
+        tp = utils.tp(y, y_bar) / len(y)
+        fp = utils.fp(y, y_bar) / len(y)
+        fn = utils.fn(y, y_bar) / len(y)
+        tn = utils.tn(y, y_bar) / len(y)
 
-        a = th.sum(y == y_bar).item() / len(y)
-        p = utils.div(tp, th.sum(y_bar > 0).item())
-        r = utils.div(tp, th.sum(y > 0).item())
-        f1 = utils.f1(tpr, fpr, fnr)
+        a = tp + tn
+        p = utils.div(tp, tp + fp)
+        r = utils.div(tp, p1)
+        m = metric(p1, fn, fp)
+        if type(m) is complex:
+            print(p1, tp, fp, fn, tn)
 
-        mmm.append([tpr, fpr, fnr, tnr, a, p, r, f1])
+        mmm.append([tp, fp, fn, tn, a, p, r, m])
 
-    tagg = ['tp', 'fp', 'fn', 'tn', 'a', 'p', 'r', 'f1']
+    tagg = ['tp', 'fp', 'fn', 'tn', 'a', 'p', 'r', args.metric]
 
     placeholder = '0' * (len(str(args.ni)) - len(str(i)))
     xx = ['/'.join(['%0.2f' % m for m in mm]) for mm in zip(*mmm)]
@@ -111,8 +127,6 @@ def log(model, i):
 utils.eval(model)
 log(model, 0)
 
-p0 = len(ax_neg) / len(ax)
-p1 = 1 - p0
 for i in range(args.ni):
     [x_pos], [x_neg] = next(pos_loader), next(neg_loader)
     x_pos, x_neg = x_pos.to(dev), x_neg.to(dev)
@@ -128,7 +142,7 @@ for i in range(args.ni):
     if args.w > 0:
         loss = args.w * fn + (1 - args.w) * fp
     else:
-        loss = -2 * (p1 - fn) / (2 * p1 - fn + fp)
+        loss = -metric(p1, fn, fp)
 
     opt.zero_grad()
     loss.backward()

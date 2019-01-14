@@ -2,7 +2,7 @@ import numpy as np
 import numpy.random as npr
 import torch as th
 import torch.utils as utils
-import torchvision.datasets as datasets
+from torchvision.datasets import MNIST, CIFAR10, CIFAR100
 
 
 def load_adult():
@@ -12,10 +12,26 @@ def load_adult():
     return x, y
 
 
-def load_cifar10():
-    a = datasets.CIFAR10('CIFAR10')
+def load_mnist():
+    a = MNIST(root='MNIST', train=True)
     ax, ay = a.train_data, a.train_labels
-    b = datasets.CIFAR10('CIFAR10', train=False)
+    b = MNIST(root='MNIST', train=False)
+    bx, by = b.test_data, b.test_labels
+    x, y = th.cat([ax, bx]), th.cat([ay, by])
+    x = x.reshape([len(x), -1]).float()
+    return x, y
+
+
+def load_binary_mnist():
+    x, y = load_mnist()
+    y[y != 1] = -1
+    return x, y
+
+
+def load_cifar10():
+    a = CIFAR10(root='CIFAR10', train=True)
+    ax, ay = a.train_data, a.train_labels
+    b = CIFAR10(root='CIFAR10', train=False)
     bx, by = b.test_data, b.test_labels
     x, y = np.concatenate([ax, bx]), np.concatenate([ay, by])
     x = x.transpose([0, 3, 1, 2]).reshape([len(x), -1])
@@ -30,9 +46,9 @@ def load_binary_cifar10():
 
 
 def load_cifar100():
-    a = datasets.CIFAR100('CIFAR100')
+    a = CIFAR100(root='CIFAR100', train=True)
     ax, ay = a.train_data, a.train_labels
-    b = datasets.CIFAR100('CIFAR100', train=False)
+    b = CIFAR100(root='CIFAR100', train=False)
     bx, by = b.test_data, b.test_labels
     x, y = np.concatenate([ax, bx]), np.concatenate([ay, by])
     x = x.transpose([0, 3, 1, 2]).reshape([len(x), -1])

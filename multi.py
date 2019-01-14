@@ -27,12 +27,11 @@ parser.add_argument('--w', type=float, help='Weight')
 parser.add_argument('--wd', type=float, help='Weight Decay')
 args = parser.parse_args()
 
-dev = th.device('cpu') if args.gpu < 0 else th.device('cuda:%d' % args.gpu)
-
 x, y = {'adult'    : data.load_adult,
         'cifar10'  : data.load_cifar10,
         'cifar100' : data.load_cifar100,
         'covtype'  : data.load_covtype,
+        'mnist'    : data.load_mnist,
         'kddcup08' : data.load_kddcup08,
         'letter'   : data.load_letter}[args.ds]()
 x, y = data.shuffle(x, y)
@@ -44,26 +43,37 @@ train_y, val_y, test_y = th.cat(train_yy), th.cat(val_yy), th.cat(test_yy)
 train_x, val_x, test_x = data.normalize([train_x, val_x, test_x])
 train_xx = th.split(train_x, [len(x) for x in train_xx])
 train_datasets = [D.TensorDataset(x) for x in train_xx]
-train_loaders = [utils.cycle(D.DataLoader(ds, bs, shuffle=True)) \
-                 for ds, bs in zip(train_datasets, args.bst)]
-
 train_loader = D.DataLoader(D.TensorDataset(train_x, train_y), args.bsi)
 val_loader = D.DataLoader(D.TensorDataset(val_x, val_y), args.bsi)
 test_loader = D.DataLoader(D.TensorDataset(test_x, test_y), args.bsi)
 
 n_classes = len(train_yy)
-pclass_list = [len(y) / len(train_y) for y in train_yy]  # estimate on training set
+if len(args.bst) == n_classes:
+    bs_list = args.bst
+elif len(args.bst) == 1:
+    bs_list = [args.bst[0]] * n_classes
+else:
+    raise RuntimeError()
+train_loaders = [utils.cycle(D.DataLoader(ds, bs, shuffle=True)) \
+                 for ds, bs in zip(train_datasets, bs_list)]
 
-model = {'linear' : th.nn.Linear(train_x.size(1), n_classes),
-         'mlp'    : mlp.MLP([train_x.size(1), 64, 64, 64, n_classes], th.relu, bn=True),
-         'resnet' : resnet.ResNet(18, n_classes)}[args.model].to(dev)
-
+if args.model == 'linear':
+    model = th.nn.Linear(train_x.size(1), n_classes)
+elif args.model == 'mlp':
+    model = mlp.MLP([train_x.size(1), 64, 64, 64, n_classes], th.relu, bn=True)
+elif args.model == 'resnet':
+    model = resnet.ResNet(18, n_classes)[args.model]
+else:
+    raise RuntimeError()
+dev = th.device('cpu') if args.gpu < 0 else th.device('cuda:%d' % args.gpu)
+model = model.to(dev)
 params = list(model.parameters())
 kwargs = {'params' : params, 'lr' : args.lr, 'weight_decay' : args.wd}
 opt = {'sgd'  : optim.SGD(**kwargs),
        'adam' : optim.Adam(amsgrad=True, **kwargs)}[args.opt]
 
 if args.tb:
+    raise NotImplementedError()
     path = 'tb/%s' % args.id
     writer = tb.SummaryWriter(path)
     train_writer = tb.SummaryWriter(path + '/train')
@@ -71,7 +81,6 @@ if args.tb:
     test_writer = tb.SummaryWriter(path + '/test')
 
 def log(model, i):
-    # TODO
     mmm = []
     for loader in train_loader, val_loader, test_loader:
         y, y_bar = infer(loader, model)
@@ -101,11 +110,10 @@ def log(model, i):
             for tag, m in zip(tagg, mm):
                 writer.add_scalar(tag, m, i)
 
-'''
 utils.eval(model)
 log(model, 0)
-'''
 
+pclass_list = [len(y) / len(train_y) for y in train_yy]
 for i in range(args.ni):
     xx = [next(loader)[0].to(dev) for loader in train_loaders]
     x = th.cat(xx)
@@ -126,8 +134,6 @@ for i in range(args.ni):
 
     print(-loss.item())
 
-    '''
     utils.eval(model)
     if (i + 1) % args.log_every == 0:
         log(model, i + 1)
-    '''
