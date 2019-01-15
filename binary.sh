@@ -12,7 +12,7 @@ for ds in adult cifar10 cifar100 covtype kddcup08 letter mnist; do
         bash $method-binary.sh $ds $metric $model $n_procs
         mkdir $id/$ds/$method/
         mv tb/* $id/$ds/$method/
-        bash optimal.sh $id/$ds/$method $metric $id/$ds/$method-opt $n_cpus
+        bash optimal.sh $id/$ds/$method $metric $n_cpus $id/$ds/$method-opt
     done
 done
 for ds in adult cifar10 cifar100 covtype kddcup08 mnist; do
