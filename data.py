@@ -118,7 +118,7 @@ def partition(x, y, pp):
     """
     sum_pp = sum(pp)
     pp = [p / sum_pp for p in pp]
-    mskk = [(y == i) for i in th.unique(y)]
+    mskk = [(y == i) for i in th.sort(th.unique(y))[0]]
     xx = list(map(x.__getitem__, mskk))
     yy = list(map(y.__getitem__, mskk))
     nnn = [[int(p * len(x)) for p in pp[:-1]] for x in xx]

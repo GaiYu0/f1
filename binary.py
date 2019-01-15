@@ -38,9 +38,9 @@ x, y = {'adult'    : data.load_adult,
         'letter'   : data.load_binary_letter,
         'mnist'    : data.load_binary_mnist}[args.ds]()
 x, y = data.shuffle(x, y)
-[[[ax_pos, ax_neg], [ay_pos, ay_neg]],
- [[bx_pos, bx_neg], [by_pos, by_neg]],
- [[cx_pos, cx_neg], [cy_pos, cy_neg]]] = data.partition(x, y, args.ptt)
+[[[ax_neg, ax_pos], [ay_neg, ay_pos]],
+ [[bx_neg, bx_pos], [by_neg, by_pos]],
+ [[cx_neg, cx_pos], [cy_neg, cy_pos]]] = data.partition(x, y, args.ptt)
 ax, bx, cx = th.cat([ax_pos, ax_neg]), th.cat([bx_pos, bx_neg]), th.cat([cx_pos, cx_neg])
 ax, bx, cx = data.normalize([ax, bx, cx])
 ay, by, cy = th.cat([ay_pos, ay_neg]), th.cat([by_pos, by_neg]), th.cat([cy_pos, cy_neg])
