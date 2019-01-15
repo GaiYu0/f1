@@ -35,7 +35,8 @@ x, y = {'adult'    : data.load_adult,
         'cifar100' : data.load_binary_cifar100,
         'covtype'  : data.load_binary_covtype,
         'kddcup08' : data.load_kddcup08,
-        'letter'   : data.load_binary_letter}[args.ds]()
+        'letter'   : data.load_binary_letter,
+        'mnist'    : data.load_binary_mnist}[args.ds]()
 x, y = data.shuffle(x, y)
 [[[ax_pos, ax_neg], [ay_pos, ay_neg]],
  [[bx_pos, bx_neg], [by_pos, by_neg]],
