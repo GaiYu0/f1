@@ -104,8 +104,8 @@ def normalize(xx, eps=1e-5):
     x = xx[0]
     mean = th.mean(x, 0, keepdim=True)
     x = x - mean
-    std = th.sqrt(th.mean(x * x, 0, keepdim=True))
-    x = x / (std + eps)
+    std = th.sqrt(th.mean(x * x, 0, keepdim=True)) + eps
+    x = x / std
     xx = [x] + [(x - mean) / std for x in xx[1:]]
     return xx
 

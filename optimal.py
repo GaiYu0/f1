@@ -1,3 +1,5 @@
+# python3 -W ignore optimal.py PATH METRIC
+
 import os
 import sys
 from event_file_loader import EventFileLoader
@@ -15,5 +17,11 @@ def extract(path):
 
 b = extract('%s/b/%s' % (sys.argv[1], os.listdir('%s/b' % sys.argv[1])[0]))
 c = extract('%s/c/%s' % (sys.argv[1], os.listdir('%s/c' % sys.argv[1])[0]))
+
+# TODO tensorboard bug?
+min_len = min(len(b), len(c))
+b = b[:min_len]
+c = c[:min_len]
+
 K = 1
 print(sum(c[b.index(x)] for x in sorted(b, reverse=True)[:K]) / K)
