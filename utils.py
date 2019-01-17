@@ -51,19 +51,19 @@ def g1(p1, fn, fp):
 
 
 def tp_01(y, y_bar):
-    return th.sum((y == 1) * (y_bar == 1)).item()
+    return th.sum((y == 1) * (y_bar == 1)).item() / len(y)
 
 
 def fp_01(y, y_bar):
-    return th.sum((y == 0) * (y_bar == 1)).item()
+    return th.sum((y == 0) * (y_bar == 1)).item() / len(y)
 
 
 def fn_01(y, y_bar):
-    return th.sum((y == 1) * (y_bar == 0)).item()
+    return th.sum((y == 1) * (y_bar == 0)).item() / len(y)
 
 
 def tn_01(y, y_bar):
-    return th.sum((y == 0) * (y_bar == 0)).item()
+    return th.sum((y == 0) * (y_bar == 0)).item() / len(y)
 
 
 def tp_mc(y, y_bar, n_classes):

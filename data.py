@@ -5,6 +5,38 @@ import torch.utils as utils
 from torchvision.datasets import MNIST, CIFAR10, CIFAR100
 
 
+def arithmetic(y, it=1, cd=1):
+    y_bar = th.zeros_like(y)
+    idx = 0
+    delta = it
+    limit = th.max(y) + 1
+    counter = 0
+    while idx + delta <= limit:
+        y_bar[(idx <= y) * (y < idx + delta)] = counter
+        idx += delta
+        delta += cd
+        counter += 1
+    if idx < limit:
+        y_bar[idx <= y] = counter
+    return y_bar
+
+
+def geometric(y, it=1, cr=2):
+    y_bar = th.zeros_like(y)
+    idx = 0
+    delta = it
+    limit = th.max(y) + 1
+    counter = 0
+    while idx + delta <= limit:
+        y_bar[(idx <= y) * (y < idx + delta)] = counter
+        idx += delta
+        delta *= cr
+        counter += 1
+    if idx < limit:
+        y_bar[idx <= y] = counter
+    return y_bar
+
+
 def load_adult():
     x, y = np.load('adult/x.npy'), np.load('adult/y.npy')
     y[y == 0] = -1
@@ -28,6 +60,11 @@ def load_binary_mnist():
     return x, y
 
 
+def load_multi_mnist():
+    x, y = load_mnist()
+    return x, arithmetic(y)
+
+
 def load_cifar10():
     a = CIFAR10(root='CIFAR10', train=True)
     ax, ay = a.train_data, a.train_labels
@@ -45,6 +82,11 @@ def load_binary_cifar10():
     return x, y
 
 
+def load_multi_cifar10():
+    x, y = load_cifar10()
+    return x, arithmetic(y)
+
+
 def load_cifar100():
     a = CIFAR100(root='CIFAR100', train=True)
     ax, ay = a.train_data, a.train_labels
@@ -52,7 +94,6 @@ def load_cifar100():
     bx, by = b.test_data, b.test_labels
     x, y = np.concatenate([ax, bx]), np.concatenate([ay, by])
     x = x.transpose([0, 3, 1, 2]).reshape([len(x), -1])
-    y[y != 1] = -1
     x, y = th.from_numpy(x).float(), th.from_numpy(y)
     return x, y
     
@@ -61,6 +102,11 @@ def load_binary_cifar100():
     x, y = load_cifar100()
     y[y != 1] = -1
     return x, y
+
+
+def load_multi_cifar100():
+    x, y = load_cifar100()
+    return x, geometric(y)
 
 
 def load_covtype():
@@ -93,6 +139,11 @@ def load_binary_letter():
     y[y != 13] = -1
     y[y == 13] = 1
     return x, y
+
+
+def load_multi_letter():
+    x, y = load_letter()
+    return x, geometric(y)
 
 
 def normalize(xx, eps=1e-5):

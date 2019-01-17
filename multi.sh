@@ -1,4 +1,4 @@
-# bash binary.sh METRIC MODEL NUMBER_OF_PROCESSES
+# bash multi.sh METRIC MODEL NUMBER_OF_PROCESSES
 metric=$1
 model=$2
 n_procs=$3
@@ -9,7 +9,7 @@ mkdir $id
 for ds in adult cifar10 cifar100 covtype kddcup08 letter mnist; do
     mkdir $id/$ds
     for method in old new; do
-        bash $method-binary.sh $ds $metric $model $n_procs
+        bash $method-multi.sh $ds $metric $model $n_procs
         mkdir $id/$ds/$method/
         mv tb/* $id/$ds/$method/
         bash select-iteration.sh $id/$ds/$method $metric $n_cpus $id/$ds/$method-opt

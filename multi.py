@@ -29,12 +29,12 @@ parser.add_argument('--wd', type=float, help='Weight Decay')
 args = parser.parse_args()
 
 x, y = {'adult'    : data.load_adult,
-        'cifar10'  : data.load_cifar10,
-        'cifar100' : data.load_cifar100,
+        'cifar10'  : data.load_multi_cifar10,
+        'cifar100' : data.load_multi_cifar100,
         'covtype'  : data.load_covtype,
         'kddcup08' : data.load_kddcup08,
-        'letter'   : data.load_letter,
-        'mnist'    : data.load_mnist}[args.ds]()
+        'letter'   : data.load_multi_letter,
+        'mnist'    : data.load_multi_mnist}[args.ds]()
 x, y = data.shuffle(x, y)
 [[train_xx, train_yy],
  [val_xx,   val_yy],
@@ -76,12 +76,23 @@ opt = {'sgd'  : optim.SGD(**kwargs),
 metric = getattr(utils, args.metric)
 
 if args.tb:
-    raise NotImplementedError()
     path = 'tb/%s' % args.id
     writer = tb.SummaryWriter(path)
     train_writer = tb.SummaryWriter(path + '/train')
     val_writer = tb.SummaryWriter(path + '/val')
     test_writer = tb.SummaryWriter(path + '/test')
+
+def infer(loader, model):
+    yy = []
+    y_barr = []
+    for x, y in loader:
+        x, y = x.to(dev), y.to(dev)
+        y_bar = th.max(model(x), 1)[1]
+        yy.append(y)
+        y_barr.append(y_bar)
+    y = th.cat(yy)
+    y_bar = th.cat(y_barr)
+    return y, y_bar
 
 def log(model, i):
     mmm = []
@@ -103,7 +114,7 @@ def log(model, i):
     print('[iteration %s%d]%s' % ((placeholder, i, x)))
 
     if args.tb:
-        for writer, mm in zip([a_writer, b_writer, c_writer], mmm):
+        for writer, mm in zip([train_writer, val_writer, test_writer], mmm):
             for tag, m in zip(tagg, mm):
                 writer.add_scalar(tag, m, i)
 
@@ -113,6 +124,7 @@ log(model, 0)
 for i in range(args.ni):
     xx = [next(loader)[0].to(dev) for loader in train_loaders]
     x = th.cat(xx)
+    utils.train(model)
     z = F.softmax(model(x), 1)
     zz = th.split(z, [len(x) for x in xx])
     pneg_list = [1 - th.mean(z[:, i]) for i, z in enumerate(zz)]
@@ -120,7 +132,7 @@ for i in range(args.ni):
     fpfp = [(1 - p_class) * p_neg for p_class, p_neg in zip(pclass_list, pneg_list)]
 
     if args.w > 0:
-        pass
+        loss = sum(args.w * fn + (1 - args.w) * fp for fn, fp in zip(fnfn, fpfp))
     else:
         loss = -metric(pclass_list, fnfn, fpfp)
 
