@@ -18,6 +18,7 @@ parser.add_argument('--id', type=str, help='IDentifier')
 parser.add_argument('--log-every', type=int, help='LOG statistics EVERY _ iterations')
 parser.add_argument('--loss', type=str, help='LOSS')
 parser.add_argument('--lr', type=float, help='Learning Rate')
+parser.add_argument('--metric', type=str, help='METRIC')
 parser.add_argument('--model', type=str, help='MODEL')
 parser.add_argument('--ni', type=int, help='Number of Iterations')
 parser.add_argument('--opt', type=str, help='OPTimizer')
@@ -31,9 +32,9 @@ x, y = {'adult'    : data.load_adult,
         'cifar10'  : data.load_cifar10,
         'cifar100' : data.load_cifar100,
         'covtype'  : data.load_covtype,
-        'mnist'    : data.load_mnist,
         'kddcup08' : data.load_kddcup08,
-        'letter'   : data.load_letter}[args.ds]()
+        'letter'   : data.load_letter,
+        'mnist'    : data.load_mnist}[args.ds]()
 x, y = data.shuffle(x, y)
 [[train_xx, train_yy],
  [val_xx,   val_yy],
@@ -46,6 +47,7 @@ train_datasets = [D.TensorDataset(x) for x in train_xx]
 train_loader = D.DataLoader(D.TensorDataset(train_x, train_y), args.bsi)
 val_loader = D.DataLoader(D.TensorDataset(val_x, val_y), args.bsi)
 test_loader = D.DataLoader(D.TensorDataset(test_x, test_y), args.bsi)
+pclass_list = [len(y) / len(train_y) for y in train_yy]
 
 n_classes = len(train_yy)
 if len(args.bst) == n_classes:
@@ -71,6 +73,7 @@ params = list(model.parameters())
 kwargs = {'params' : params, 'lr' : args.lr, 'weight_decay' : args.wd}
 opt = {'sgd'  : optim.SGD(**kwargs),
        'adam' : optim.Adam(amsgrad=True, **kwargs)}[args.opt]
+metric = getattr(utils, args.metric)
 
 if args.tb:
     raise NotImplementedError()
@@ -85,20 +88,14 @@ def log(model, i):
     for loader in train_loader, val_loader, test_loader:
         y, y_bar = infer(loader, model)
 
-        tp = utils.tp(y, y_bar)
-        tpr = tp / len(y)
-        fpr = utils.fp(y, y_bar) / len(y)
-        fnr = utils.fn(y, y_bar) / len(y)
-        tnr = utils.tn(y, y_bar) / len(y)
-
         a = th.sum(y == y_bar).item() / len(y)
-        p = utils.div(tp, th.sum(y_bar > 0).item())
-        r = utils.div(tp, th.sum(y > 0).item())
-        f1 = utils.f1(tpr, fpr, fnr)
+        fnfn = utils.fn_mc(y, y_bar, n_classes)
+        fpfp = utils.fp_mc(y, y_bar, n_classes)
+        m = metric(pclass_list, fnfn, fpfp)
 
-        mmm.append([tpr, fpr, fnr, tnr, a, p, r, f1])
+        mmm.append([a, m])
 
-    tagg = ['tp', 'fp', 'fn', 'tn', 'a', 'p', 'r', 'f1']
+    tagg = ['a', args.metric]
 
     placeholder = '0' * (len(str(args.ni)) - len(str(i)))
     xx = ['/'.join(['%0.2f' % m for m in mm]) for mm in zip(*mmm)]
@@ -113,7 +110,6 @@ def log(model, i):
 utils.eval(model)
 log(model, 0)
 
-pclass_list = [len(y) / len(train_y) for y in train_yy]
 for i in range(args.ni):
     xx = [next(loader)[0].to(dev) for loader in train_loaders]
     x = th.cat(xx)
@@ -126,13 +122,11 @@ for i in range(args.ni):
     if args.w > 0:
         pass
     else:
-        loss = -getattr(utils, args.loss)(pclass_list, fnfn, fpfp)
+        loss = -metric(pclass_list, fnfn, fpfp)
 
     opt.zero_grad()
     loss.backward()
     opt.step()
-
-    print(-loss.item())
 
     utils.eval(model)
     if (i + 1) % args.log_every == 0:
