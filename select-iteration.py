@@ -1,4 +1,4 @@
-# python3 -W ignore optimal.py PATH METRIC
+# python3 -W ignore select-iteration.py PATH METRIC
 
 import os
 import sys
@@ -23,5 +23,5 @@ min_len = min(len(b), len(c))
 b = b[:min_len]
 c = c[:min_len]
 
-K = 1
-print(sum(c[b.index(x)] for x in sorted(b, reverse=True)[:K]) / K)
+x = max(b)
+print('%.3f, %.3f' % (x, c[b.index(x)]))

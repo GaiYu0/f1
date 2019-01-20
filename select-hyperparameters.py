@@ -1,5 +1,5 @@
 import sys
 
-lnn = open(sys.argv[1]).readlines()
-xx = [float(ln.strip().split(': ')[1]) for ln in lnn]
-print(lnn[xx.index(max(xx))].strip())
+ll = open(sys.argv[1]).readlines()
+bb = [float(l.strip().split(' ')[1]) for l in ll]
+print(ll[bb.index(max(bb))].strip())
