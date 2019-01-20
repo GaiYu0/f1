@@ -24,4 +24,4 @@ b = b[:min_len]
 c = c[:min_len]
 
 x = max(b)
-print('%.3f, %.3f' % (x, c[b.index(x)]))
+print('%.3f %.3f' % (x, c[b.index(x)]))

@@ -5,7 +5,7 @@ n_procs=$3
 output=$4
 i=0
 for x in $input/*; do
-    echo "$x: $(python3 -W ignore select-iteration.py $x $metric)" > $output$i- &
+    echo "$x $(python3 -W ignore select-iteration.py $x $metric)" > $output$i- &
     i=$(($i + 1))
     if (($i % $n_procs == 0)); then
         wait
