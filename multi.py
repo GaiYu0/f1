@@ -78,9 +78,9 @@ metric = getattr(utils, args.metric)
 if args.tb:
     path = 'tb/%s' % args.id
     writer = tb.SummaryWriter(path)
-    train_writer = tb.SummaryWriter(path + '/train')
-    val_writer = tb.SummaryWriter(path + '/val')
-    test_writer = tb.SummaryWriter(path + '/test')
+    train_writer = tb.SummaryWriter(path + '/a')
+    val_writer = tb.SummaryWriter(path + '/b')
+    test_writer = tb.SummaryWriter(path + '/c')
 
 def infer(loader, model):
     yy = []
