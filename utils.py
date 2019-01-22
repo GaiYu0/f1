@@ -97,6 +97,15 @@ def f1_micro(pp, fnfn, fpfp):
     return 2 * (1 - sum_fn) / (2 - sum_fn + sum_fp)
 
 
+def g1_micro(p1, fnfn, fpfp):
+    sum_fn = sum(fnfn)
+    sum_fp = sum(fpfp)
+    ret = (1 - sum_fn) / (1 - sum_fn + sum_fp) ** 0.5
+    if type(ret) is complex:
+        ret = float('Inf')
+    return ret
+
+
 def train(model):
     model.train()
     for p in model.parameters():
