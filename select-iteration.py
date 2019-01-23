@@ -24,7 +24,11 @@ b = b[:min_len]
 c = c[:min_len]
 inf = float('Inf')
 predicate = lambda pair: pair[0] != inf and pair[1] != inf
-b, c = map(list, zip(*filter(predicate, zip(b, c))))
+try:
+    b, c = map(list, zip(*filter(predicate, zip(b, c))))
+except ValueError:
+    pass
 
-x = max(b)
-print('%.3f %.3f' % (x, c[b.index(x)]))
+if b:
+    x = max(b)
+    print('%.3f %.3f' % (x, c[b.index(x)]))
