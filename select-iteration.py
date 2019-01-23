@@ -32,3 +32,5 @@ except ValueError:
 if b:
     x = max(b)
     print('%.3f %.3f' % (x, c[b.index(x)]))
+else:
+    print('0.0 0.0')
