@@ -12,13 +12,6 @@ for ds in adult cifar10 cifar100 covtype kddcup08 letter mnist; do
         bash $method-multi.sh $ds $metric $model $n_procs
         mkdir $id/$ds/$method/
         mv tb/* $id/$ds/$method/
-        bash select-iteration.sh $id/$ds/$method $metric $n_cpus $id/$ds/$method-opt
-    done
-done
-for ds in adult cifar10 cifar100 covtype kddcup08 mnist; do
-    echo $ds
-    for method in old new; do
-        python3 select-hyperparameters.py $id/$ds/$method-opt
     done
 done
 rm -r tb
